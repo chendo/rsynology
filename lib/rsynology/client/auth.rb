@@ -1,23 +1,27 @@
 module RSynology
   class Client
-    class Auth
-      attr_reader :client, :endpoint
+    class Auth < API
+      attr_reader :client, :endpoint, :maxVersion
 
-      def initialize(client, options)
-        @client = client
-        @endpoint = options['path']
+      class AuthenticationFailed < StandardError; end
+
+      def self.api_name
+        'SYNO.API.Auth'
       end
 
       def login(account, password, session = nil, format = 'sid')
         params = {
           account: account,
           passwd: password,
-          format: format
+          format: format,
         }
         params.merge!(session: session) if session
 
-        response = client.request(endpoint, params)
-        client.session_id = response['sid']
+        response = request("Login", params)
+
+        raise AuthenticationFailed if !response['success']
+
+        client.session_id = response['data']['sid']
       end
 
       def logout(session)

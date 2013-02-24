@@ -8,18 +8,21 @@ module RSynology
 
     class RequestFailed < StandardError; end
 
-    SUPPORTED_ENDPOINTS = {
-      'SYNO.API.Auth' => 'Auth'
-    }
+    def initialize(url, options = {})
+      faraday_options = {url: url}
+      faraday_options[:ssl] = {verify: false} if options[:verify_ssl] == false
 
-    def initialize(url)
-      @connection = Faraday.new(:url => url) do |faraday|
+      @connection = Faraday.new(faraday_options) do |faraday|
         faraday.request  :url_encoded             # form-encode POST params
         faraday.response :logger                  # log requests to STDOUT
         faraday.adapter  Faraday.default_adapter  # make requests with Net::HTTP
         faraday.use FaradayMiddleware::ParseJson
         faraday.use FaradayMiddleware::Mashify
       end
+    end
+
+    def login!(account, password, session = nil, format = 'sid')
+      endpoints['SYNO.API.Auth'].login(account, password, session, format)
     end
 
     def endpoints
@@ -31,9 +34,9 @@ module RSynology
         query: 'SYNO.'
       })
       {}.tap do |result|
-        resp.each do |endpoint, options|
-          next unless SUPPORTED_ENDPOINTS[endpoint]
-          result[endpoint] = self.class.const_get(SUPPORTED_ENDPOINTS[endpoint]).new(self, options)
+        resp['data'].each do |endpoint, options|
+          next unless supported_apis[endpoint]
+          result[endpoint] = supported_apis[endpoint].new(self, options)
         end
       end
     end
@@ -41,11 +44,21 @@ module RSynology
     def request(endpoint, params)
       params = params.merge(sid: session_id) if session_id
       resp = connection.get("/webapi/#{endpoint}", params)
-      body = resp.body
-      if !body['success']
-        raise RequestFailed
+      resp.body
+    end
+
+    private
+
+    def supported_apis
+      @supported_apis ||= {}.tap do |apis|
+        self.class.constants.each do |symbol|
+          next if symbol == :API
+          const = self.class.const_get(symbol)
+          if const.respond_to?(:api_name)
+            apis[const.api_name] = const
+          end
+        end
       end
-      body['data']
     end
   end
 end
