@@ -4,11 +4,12 @@ require 'faraday_middleware'
 module RSynology
   class Client
     attr_reader :connection
+    attr_accessor :session_id
 
     class RequestFailed < StandardError; end
 
     SUPPORTED_ENDPOINTS = {
-      'SYNO.API.Auth' => Auth
+      'SYNO.API.Auth' => 'Auth'
     }
 
     def initialize(url)
@@ -30,19 +31,21 @@ module RSynology
         query: 'SYNO.'
       })
       {}.tap do |result|
-        resp['data'].each do |endpoint, options|
-          result[k] = SUPPORTED_ENDPOINTS[k].new(client, options)
+        resp.each do |endpoint, options|
+          next unless SUPPORTED_ENDPOINTS[endpoint]
+          result[endpoint] = self.class.const_get(SUPPORTED_ENDPOINTS[endpoint]).new(self, options)
         end
       end
     end
 
     def request(endpoint, params)
+      params = params.merge(sid: session_id) if session_id
       resp = connection.get("/webapi/#{endpoint}", params)
       body = resp.body
       if !body['success']
         raise RequestFailed
       end
-      resp
+      body['data']
     end
   end
 end
