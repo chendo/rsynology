@@ -6,10 +6,10 @@ module RSynology
         'SYNO.SurveillanceStation.Event'
       end
 
-      def query(params)
+      def query(params = {})
         default_params = {
           offset: 0,
-          limit: nil,
+          limit: 10,
           mode: nil,
           locked: nil,
           camera_ids: nil,
@@ -21,7 +21,7 @@ module RSynology
           v.nil?
         end
 
-        request("Query", params)
+        request("Query", merged_params)
       end
     end
   end

@@ -1,8 +1,4 @@
-require "rsynology/version"
-require "rsynology/client/api"
-require "rsynology/client/auth"
-require "rsynology/client"
-
+Dir[File.join(File.dirname(__FILE__), 'rsynology', '**', '*.rb')].each { |f| require f }
 module RSynology
 
 end

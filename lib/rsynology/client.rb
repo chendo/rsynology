@@ -27,22 +27,24 @@ module RSynology
 
     def endpoints
       # Returns a hash of endpoints. Will return nil if no support
-      resp = request('query.cgi', {
-        api: 'SYNO.API.Info',
-        method: 'Query',
-        version: 1,
-        query: 'SYNO.'
-      })
-      {}.tap do |result|
-        resp['data'].each do |endpoint, options|
-          next unless supported_apis[endpoint]
-          result[endpoint] = supported_apis[endpoint].new(self, options)
+      @endpoints ||= begin
+        resp = request('query.cgi', {
+          api: 'SYNO.API.Info',
+          method: 'Query',
+          version: 1,
+          query: 'SYNO.'
+        })
+        {}.tap do |result|
+          resp['data'].each do |endpoint, options|
+            next unless supported_apis[endpoint]
+            result[endpoint] = supported_apis[endpoint].new(self, options)
+          end
         end
       end
     end
 
     def request(endpoint, params)
-      params = params.merge(sid: session_id) if session_id
+      params = params.merge(_sid: session_id) if session_id
       resp = connection.get("/webapi/#{endpoint}", params)
       resp.body
     end
