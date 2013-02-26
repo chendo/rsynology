@@ -27,6 +27,24 @@ module RSynology
       def logout(session)
         client.request(endpoint, {session: session})
       end
+
+      protected
+
+      class AccountNotSpecified < ArgumentError; end
+      class InvalidPassword < StandardError; end
+      class AccountDisabledOrGuest < StandardError; end
+
+      def handle_error(error)
+        case error['code']
+        when 101
+          raise AccountNotSpecified
+        when 400
+          raise InvalidPassword
+        when 401
+          raise AccountDisabledOrGuest
+        end
+        super
+      end
     end
   end
 end
