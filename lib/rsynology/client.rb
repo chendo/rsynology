@@ -13,8 +13,6 @@ module RSynology
       faraday_options[:ssl] = {verify: false} if options[:verify_ssl] == false
 
       @connection = Faraday.new(faraday_options) do |faraday|
-        faraday.request  :url_encoded             # form-encode POST params
-        faraday.response :logger                  # log requests to STDOUT
         faraday.adapter  Faraday.default_adapter  # make requests with Net::HTTP
         faraday.use FaradayMiddleware::ParseJson
         faraday.use FaradayMiddleware::Mashify
