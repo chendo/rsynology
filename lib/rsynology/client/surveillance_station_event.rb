@@ -15,6 +15,7 @@ module RSynology
         property :stop_time, from: :stopTime, with: TIME_TRANSFORM
         property :status
         property :video_codec, from: :videoCodec
+        property :owner_id, from: :ownerDsId
 
         def duration
           stop_time - start_time
